@@ -1,0 +1,76 @@
+# =========================
+# Entornos Virtuales
+# =========================
+.nicegui/
+./*
+venv/
+env/
+.venv/
+env.bak/
+venv.bak/
+
+# =========================
+# Caché y Binarios de Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# =========================
+# Variables de Entorno y Secretos
+# =========================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# =========================
+# Bases de Datos Locales
+# =========================
+# Ignoramos los checkpoints y stores de LangGraph/SQLite
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# =========================
+# Volúmenes y Datos Dinámicos
+# =========================
+# Ignora todo el contenido de la carpeta memory (logs, BDs), 
+# pero mantiene la carpeta en la estructura del repo.
+/memory/*
+app/memory/*
+!app/memory/.gitkeep
+
+# =========================
+# Dependencias Externas
+# =========================
+# Evita subir los binarios y librerías .jar de Oracle
+/sqlcl_files/*
+
+# =========================
+# IDEs y Sistema Operativo
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

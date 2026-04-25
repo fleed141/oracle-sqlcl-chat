@@ -1,0 +1,54 @@
+# This is a podman quadlet file example
+[Unit]
+Description=Oracle chat
+
+[Container]
+
+ContainerName=oracle-chat
+Image=ghcr.io/fleed141/agente-mcp:latest
+Timezone=local
+
+Environment=SYSTEM_PROMPT="You are Oracle, an expert assistant in SQL and databases. You help users query and manage their databases using SQL. Make sure to always respond in {LANGUAGE}, no other language is allowed. You always respond with information based on correct and optimized SQL queries, and you briefly explain your reasoning. When writing these queries, always use DBA views. If the user provides additional information or context, you take it into account to generate your responses. If you make a mistake, correct it in the next response. You must not execute SQL queries that can modify the database, only read-only queries (SELECT). You must not show SQL queries to the user."
+
+Environment=FILESYSTEM_PROMPT="Save relevant information about the user to your memory so you can use it in future conversations. At the beginning of a new conversation, review the stored information for that user and use it as context to generate more informed and personalized responses. Organize the information logically into files and folders, using descriptive names. Whenever you write to the file system, ensure the information is well-structured and easily accessible for future reference."
+
+Environment=SQLCL_CONNECTIONS="[conn_name,user/password@ip:port/servicename]"
+
+Environment=GOOGLE_API_KEY=aaaaaaaaaaaaaaaaaa
+Environment=GOOGLE_GEMINI_MODEL=google_genai:gemini-3-flash-preview
+
+#Environment=OPENROUTER_API_KEY="aaaaaaaaaaaaaaaaaaaaa"
+#Environment=OPENROUTER_MODEL="auto"
+
+#Environment=ANTHROPIC_API_KEY="aaaaaaaaaaaaaaaaaaaaa"
+#Environment=ANTHROPIC_MODEL="claude-sonnet-4-6"
+
+#Environment=DEEPSEEK_API_KEY="aaaaaaaaaaaaaaaaaaa"
+#Environment=DEEPSEEK_MODEL="deepseek-chat"
+
+#Environment=OPENAI_API_KEY="aaaaaaaa"
+#Environment=OPENAI_MODEL="openai:gpt-5.4"
+
+#Environment=LANGSMITH_TRACING=false
+#Environment=LANGSMITH_API_KEY=""
+
+Environment=API_WORKERS=1
+Environment=NICEGUI_STORAGE_SECRET="megasecretkey"
+
+# If you want the agent to not lose his memory after a container recreation
+Volume=memory:/workspace/memory
+
+Volume=sqlcl_files:/workspace/sqlcl_files
+
+# If you want to use your own sqlcl binaries, if not mounted it will try to download the latest version
+# Volume=/opt/sqlcl:/workspace/sqlcl_files:z 
+
+PublishPort=8000:8000
+
+
+[Service]
+# Restart service when sleep finishes
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

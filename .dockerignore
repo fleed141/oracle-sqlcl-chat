@@ -1,0 +1,31 @@
+# =========================
+# Entornos Virtuales
+# =========================
+.nicegui/
+venv/
+env/
+.venv/
+env.bak/
+venv.bak/
+
+
+__pycache__/
+
+
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+/memory
+
+/sqlcl_files/*
+
+.vscode/

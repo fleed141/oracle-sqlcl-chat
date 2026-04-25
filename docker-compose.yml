@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  oracle-chat:
+    container_name: oracle-chat
+    image: ghcr.io/fleed141/agente-mcp:latest
+    restart: on-failure
+    ports:
+      - "8000:8000"
+    environment:
+    
+      - TZ=America/Asuncion
+      - SYSTEM_PROMPT=You are Oracle, an expert assistant in SQL and databases. You help users query and manage their databases using SQL. Make sure to always respond in {LANGUAGE}, no other language is allowed. You always respond with information based on correct and optimized SQL queries, and you briefly explain your reasoning. When writing these queries, always use DBA views. If the user provides additional information or context, you take it into account to generate your responses. If you make a mistake, correct it in the next response. You must not execute SQL queries that can modify the database, only read-only queries (SELECT). You must not show SQL queries to the user.
+      - FILESYSTEM_PROMPT=Save relevant information about the user to your memory so you can use it in future conversations. At the beginning of a new conversation, review the stored information for that user and use it as context to generate more informed and personalized responses. Organize the information logically into files and folders, using descriptive names. Whenever you write to the file system, ensure the information is well-structured and easily accessible for future reference.
+      - SQLCL_CONNECTIONS=[conn_name,user/password@ip:port/servicename]
+      
+      - API_WORKERS=1
+      - NICEGUI_STORAGE_SECRET="supermegadupersecretkey"
+      
+      #- OPENROUTER_API_KEY="aaaaaaaaaaaaaaaaaaaaa"
+      #- OPENROUTER_MODEL="auto"
+
+      #- ANTHROPIC_API_KEY="aaaaaaaaaaaaaaaaaaaaa"
+      #- ANTHROPIC_MODEL="claude-sonnet-4-6"
+
+      #- DEEPSEEK_API_KEY="aaaaaaaaaaaaaaaaaaa"
+      #- DEEPSEEK_MODEL="deepseek-chat"
+
+      #- OPENAI_API_KEY="aaaaaaaa"
+      #- OPENAI_MODEL="openai:gpt-5.4"
+
+      - GOOGLE_API_KEY=aaaaaaaaaaaaaaaaaa
+      - GOOGLE_GEMINI_MODEL=google_genai:gemini-3-flash-preview
+
+      #- LANGSMITH_TRACING=false
+      #- LANGSMITH_API_KEY=""
+    volumes:
+
+      # Agent memory
+      - memory:/workspace/memory
+
+      # Si no hay binarios de sqlcl, se descargan automáticamente y se guardan en este volumen para su uso futuro
+      - sqlcl_files:/workspace/sqlcl_files
+
+      # Si quieres usar tus propios binarios de sqlcl, descomenta la siguiente línea y proporciona la ruta correcta en tu máquina
+      #- /path/to/sqlcl:/workspace/sqlcl_files:z
+
+
+      # Si quieres usar tus propios skills de agente
+      # Ten en cuenta que se espera la existencia de un archivo SKILLS.md que describa los skills disponibles
+      # Dicho archivo se pasara al contexto del agente como indice de los skills disponibles
+
+      #- /path/to/skills:/workspace/skills:z
+
+
+
+volumes:
+  sqlcl_files:
+  memory:
