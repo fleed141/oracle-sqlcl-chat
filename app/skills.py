@@ -2,6 +2,7 @@ from langchain.agents.middleware import ModelRequest, ModelResponse, AgentMiddle
 from langchain.messages import SystemMessage
 from typing import Callable, Awaitable
 import anyio
+import asyncio
 from langchain.tools import tool
 from loguru import logger
 
@@ -35,36 +36,38 @@ async def load_skill_index():
 class SkillMiddleware(AgentMiddleware):
     """Middleware that injects skill descriptions into the system prompt."""
 
-    # Register the load_skill tool as a class variable
     tools = [load_skill]
 
     def __init__(self):
-        """Initialize and generate the skills prompt from SKILLS."""
-        self.skills_prompt = ""
+        self._lock = asyncio.Lock()
+        self._skills_prompt = None
+
+    async def _ensure_skills_loaded(self):
+        if self._skills_prompt is not None:
+            return
+        async with self._lock:
+            if self._skills_prompt is not None:
+                return
+            self._skills_prompt = await load_skill_index()
 
     async def awrap_model_call(
         self,
         request: ModelRequest,
         handler: Callable[[ModelRequest], Awaitable[ModelResponse]],
     ) -> ModelResponse:
-        """Async: Inject skill descriptions into system prompt."""
-        # Build the skills addendum
-
-        self.skills_prompt = await load_skill_index()
+        await self._ensure_skills_loaded()
         skills_addendum = (
-            f"\n\n## Available Skills\n\n{self.skills_prompt}\n\n"
+            f"\n\n## Available Skills\n\n{self._skills_prompt}\n\n"
             "Use the load_skill tool when you need detailed information "
             "about handling a specific type of request."
         )
 
-        # Append to system message content blocks
         new_content = list(request.system_message.content_blocks) + [
             {"type": "text", "text": skills_addendum}
         ]
         new_system_message = SystemMessage(content=new_content)
         modified_request = request.override(system_message=new_system_message)
 
-        # Ojo aquí: se debe hacer 'await' al handler
         return await handler(modified_request)
 
 

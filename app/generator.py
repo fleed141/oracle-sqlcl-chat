@@ -95,14 +95,18 @@ async def agent_response(agent: CompiledStateGraph, mensaje: UserMessage):
 
         logger.success(f"Respuesta generada para el usuario {mensaje.user_id}")
 
-        if isinstance(response["messages"][-1].content, list):
+        if not response.get("messages"):
+            raise ValueError("El agente no generó ningún mensaje de respuesta")
+
+        last_message = response["messages"][-1]
+        if isinstance(last_message.content, list):
             return (
-                response["messages"][-1]
-                .content[0]
-                .get("text", response["messages"][-1].content)
+                last_message.content[0].get("text", last_message.content)
+                if last_message.content
+                else ""
             )
         else:
-            return response["messages"][-1].content
+            return last_message.content
     except Exception as e:
         logger.exception(f"Error procesando respuesta del agente: {str(e)}")
         raise

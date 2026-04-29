@@ -2,7 +2,6 @@
 # Entornos Virtuales
 # =========================
 .nicegui/
-./*
 venv/
 env/
 .venv/

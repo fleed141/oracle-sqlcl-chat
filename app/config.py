@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     NICEGUI_STORAGE_SECRET: str
     LANGSMITH_TRACING: bool = False
     LANGSMITH_API_KEY: str = ""
+    LANGUAGE: str = "Spanish"
 
     class Config:
         env_file = ".env"
@@ -68,7 +69,6 @@ def parse_connection_string(cadena_bruta):
 
 def sqlcl_init_config(nombre_conexion, cadena_conexion):
     try:
-        # Abrimos SQLcl sin logo para no ensuciar la salida
         proc = subprocess.Popen(
             [f"{settings.SQLCL_PATH}", "/NOLOG"],
             stdin=subprocess.PIPE,
@@ -76,20 +76,71 @@ def sqlcl_init_config(nombre_conexion, cadena_conexion):
             stderr=subprocess.PIPE,
             text=True,
         )
-        # Enviamos el comando de guardado y luego exit
+        comandos = f"conn -sv -save {nombre_conexion} {cadena_conexion}\nexit\n"
+        stdout, stderr = proc.communicate(input=comandos, timeout=15)
 
-        comandos = f"conn -sv -save {nombre_conexion} {cadena_conexion}"
-
-        stdout, stderr = proc.communicate(input=comandos)
-
-        if "Connection saved" in stdout or "Connected" in stdout:
-            logger.success(f"Conexión guardada con éxito.")
+        if "saved" in stdout.lower() or "already exists" in stdout.lower():
+            logger.info(f"Conexión '{nombre_conexion}' lista en SQLcl.")
+        elif "Connection failed" in stdout:
+            logger.warning(f"Conexión '{nombre_conexion}' guardada pero no validada (host unreachable).")
         else:
             logger.error("Hubo un problema al guardar:")
             logger.info(stdout)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        stdout, stderr = proc.communicate()
+        logger.warning(f"Conexión '{nombre_conexion}' guardada con timeout (host unreachable).")
     except Exception as e:
         logger.exception(f"Error al ejecutar SQLcl: {str(e)}")
         raise
+
+
+def _sqlcl_exec(comandos: str) -> str:
+    proc = subprocess.Popen(
+        [f"{settings.SQLCL_PATH}", "/NOLOG"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    stdout, stderr = proc.communicate(input=comandos, timeout=60)
+    return stdout
+
+
+_BANNER_JUNK = {"release", "production", "copyright", "all rights reserved", "sqlcl:"}
+
+
+def sqlcl_list_connections() -> list[str]:
+    stdout = _sqlcl_exec("set feedback off\nconnmgr list -flat\nexit\n")
+    names = []
+    for line in stdout.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        lower = stripped.lower()
+        if any(junk in lower for junk in _BANNER_JUNK):
+            continue
+        names.append(stripped)
+    return names
+
+
+def sqlcl_show_connection(nombre: str) -> dict | None:
+    stdout = _sqlcl_exec(f"connmgr show {nombre}\nexit\n")
+    result = {}
+    for line in stdout.splitlines():
+        stripped = line.strip()
+        if stripped.lower().startswith("connect string:") or stripped.lower().startswith("connect string :"):
+            result["connect_string"] = stripped.split(":", 1)[1].strip()
+        elif stripped.lower().startswith("user:") or stripped.lower().startswith("user :"):
+            result["user"] = stripped.split(":", 1)[1].strip()
+    return result if result.get("connect_string") else None
+
+
+def sqlcl_test_connection(nombre: str) -> tuple[bool, str]:
+    stdout = _sqlcl_exec(f"connmgr test {nombre}\nexit\n")
+    success = "Connection Test Successful" in stdout
+    message = "\n".join(line.strip() for line in stdout.splitlines() if line.strip())
+    return success, message
 
 
 def check_for_sqlcl():
